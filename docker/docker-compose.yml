@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: leados_user
-      POSTGRES_PASSWORD: leados_password
-      POSTGRES_DB: leados_db
+      POSTGRES_USER: ${POSTGRES_USER:-leados_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-leados_password}
+      POSTGRES_DB: ${POSTGRES_DB:-leados_db}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U leados_user -d leados_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-leados_user} -d ${POSTGRES_DB:-leados_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,7 +24,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://leados_user:leados_password@postgres:5432/leados_db
+      - DATABASE_URL=${DATABASE_URL:-postgresql://leados_user:leados_password@postgres:5432/leados_db}
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,7 +39,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     volumes:
       - ../frontend:/app
       - /app/node_modules
@@ -51,12 +51,12 @@ services:
     ports:
       - "5678:5678"
     environment:
-      - N8N_HOST=localhost
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - NODE_ENV=production
-      - WEBHOOK_URL=http://localhost:5678/
-      - GENERIC_TIMEZONE=UTC
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=${N8N_PORT:-5678}
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - NODE_ENV=${NODE_ENV:-production}
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-UTC}
     volumes:
       - n8n_data:/home/node/.n8n
       - ../n8n/workflows:/home/node/workflows
