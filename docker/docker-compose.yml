@@ -25,6 +25,9 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://leados_user:leados_password@postgres:5432/leados_db}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-60}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
