@@ -18,6 +18,15 @@ class ApifyAccountCreate(BaseModel):
     reset_date: Optional[date] = None
 
 
+class ApifyAccountUpdate(BaseModel):
+    """Input for updating an Apify account. Any provided fields will overwrite existing ones."""
+    name: Optional[str] = Field(None, max_length=120)
+    api_key: Optional[str] = Field(None, max_length=255)
+    remaining_credits: Optional[Decimal] = None
+    status: Optional[str] = Field(None, max_length=20)
+    reset_date: Optional[date] = None
+
+
 class ApifyAccountRead(BaseModel):
     """Output shape. api_key is always masked to its last 4 characters —
     the full key should never leave the API once stored."""
