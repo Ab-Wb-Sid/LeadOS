@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+  body {
+    @apply bg-neutral-50 text-neutral-900 font-sans;
+  }
+  h1, h2, h3, h4 {
+    @apply font-semibold text-neutral-900;
+  }
+}
+
+@layer components {
+  /* Status badges — pass a status string, map it to one of these classes */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-success { @apply badge bg-success-100 text-success-700; }
+  .badge-warning { @apply badge bg-warning-100 text-warning-700; }
+  .badge-danger  { @apply badge bg-danger-100 text-danger-700; }
+  .badge-info    { @apply badge bg-info-100 text-info-700; }
+  .badge-neutral { @apply badge bg-neutral-100 text-neutral-700; }
+
+  .card {
+    @apply rounded-xl border border-neutral-200 bg-white shadow-sm;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2
+           text-sm font-medium text-white transition-colors hover:bg-primary-700
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+}
