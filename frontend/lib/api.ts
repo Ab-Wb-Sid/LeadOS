@@ -13,6 +13,61 @@ export interface LogoutResponse {
   message: string;
 }
 
+// Mirrors backend/app/models/campaign.py's status column comment.
+export type CampaignStatus =
+  | 'PENDING'
+  | 'SCRAPING'
+  | 'ENRICHING'
+  | 'SYNCING'
+  | 'COMPLETED'
+  | 'FAILED';
+
+// Mirrors backend/app/schemas/campaign.py CampaignRead
+export interface Campaign {
+  id: string;
+  name: string;
+  industry: string;
+  country: string | null;
+  state: string | null;
+  max_leads: number;
+  status: CampaignStatus;
+  total_scraped: number;
+  total_enriched: number;
+  total_imported: number;
+  created_by: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+// Mirrors backend/app/schemas/campaign.py CampaignCreate
+export interface CampaignCreateInput {
+  name: string;
+  industry: string;
+  country?: string | null;
+  state?: string | null;
+  max_leads: number;
+}
+
+// Mirrors backend/app/schemas/pagination.py Page[T]
+export interface Page<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export type CampaignListResponse = Page<Campaign>;
+
+// Mirrors backend/app/schemas/dashboard.py DashboardStats
+export interface DashboardStats {
+  total_scraped: number;
+  total_enriched: number;
+  total_imported: number;
+  active_jobs: number;
+  failed_jobs: number;
+}
+
 export class ApiError extends Error {
   status: number;
 
@@ -94,5 +149,34 @@ export function logout(): Promise<LogoutResponse> {
 export function getMe(): Promise<User> {
   return request<User>('/auth/me', {
     method: 'GET',
+  });
+}
+
+/** GET /dashboard/stats — aggregate numbers for the dashboard header strip. */
+export function getDashboardStats(): Promise<DashboardStats> {
+  return request<DashboardStats>('/dashboard/stats', {
+    method: 'GET',
+  });
+}
+
+/** GET /campaigns — most-recent-first, paginated. */
+export function listCampaigns(page = 1, pageSize = 20): Promise<CampaignListResponse> {
+  return request<CampaignListResponse>(`/campaigns?page=${page}&page_size=${pageSize}`, {
+    method: 'GET',
+  });
+}
+
+/** GET /campaigns/{id} */
+export function getCampaign(id: string): Promise<Campaign> {
+  return request<Campaign>(`/campaigns/${id}`, {
+    method: 'GET',
+  });
+}
+
+/** POST /campaigns — creates the Campaign + its initial SCRAPE job, stub-triggers n8n. */
+export function createCampaign(payload: CampaignCreateInput): Promise<Campaign> {
+  return request<Campaign>('/campaigns', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
 }

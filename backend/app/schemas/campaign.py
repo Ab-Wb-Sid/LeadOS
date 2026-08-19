@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.pagination import Page
+
 
 class CampaignCreate(BaseModel):
     """Base creation fields. Router-level fields (e.g. triggering the n8n
@@ -35,3 +37,7 @@ class CampaignRead(BaseModel):
     created_by: Optional[UUID] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
+
+
+class CampaignListResponse(Page[CampaignRead]):
+    """Paginated response for GET /campaigns."""

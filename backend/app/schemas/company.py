@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.pagination import Page
+
 
 class CompanyRead(BaseModel):
     """Base read shape for a company. No Create schema yet — companies
@@ -31,3 +33,8 @@ class CompanyRead(BaseModel):
     status: str  # RAW, CLEANED, ENRICHED, READY, HUBSPOT, CONTACTED, QUALIFIED, CUSTOMER
     hubspot_company_id: Optional[str] = None
     created_at: datetime
+
+
+class CompanyListResponse(Page[CompanyRead]):
+    """Paginated response for GET /campaigns/{id}/companies (and later
+    GET /companies once that router exists)."""
