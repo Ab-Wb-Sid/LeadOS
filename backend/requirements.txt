@@ -7,3 +7,4 @@ pydantic-settings
 bcrypt
 pyjwt
 email-validator
+cryptography

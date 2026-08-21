@@ -30,6 +30,7 @@ services:
       - INTERNAL_API_KEY=${INTERNAL_API_KEY}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@sanestix.com}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-ChangeMe123!}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     depends_on:
       postgres:
         condition: service_healthy
