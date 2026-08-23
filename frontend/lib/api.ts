@@ -180,3 +180,31 @@ export function createCampaign(payload: CampaignCreateInput): Promise<Campaign> 
     body: JSON.stringify(payload),
   });
 }
+
+// -- Accounts --
+
+export interface Account {
+  id: string;
+  name: string;
+  api_key: string;
+  remaining_credits: number | string;
+  status: string;
+  reset_date: string | null;
+  last_used_at: string | null;
+}
+
+export interface AccountCreateInput {
+  name: string;
+  api_key: string;
+}
+
+export function listAccounts(provider: 'apify' | 'apollo'): Promise<Account[]> {
+  return request<Account[]>(`/${provider}-accounts`, { method: 'GET' });
+}
+
+export function createAccount(provider: 'apify' | 'apollo', payload: AccountCreateInput): Promise<Account> {
+  return request<Account>(`/${provider}-accounts`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/components/ComingSoon';
+import { AccountTable } from '@/components/AccountTable';
 
 export default function ApolloAccountsPage() {
-  return <ComingSoon title="Apollo Accounts" />;
+  return <AccountTable provider="apollo" title="Apollo Accounts" />;
 }

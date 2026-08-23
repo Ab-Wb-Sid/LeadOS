@@ -1,5 +1,5 @@
-import { ComingSoon } from '@/components/ComingSoon';
+import { AccountTable } from '@/components/AccountTable';
 
 export default function ApifyAccountsPage() {
-  return <ComingSoon title="Apify Accounts" />;
+  return <AccountTable provider="apify" title="Apify Accounts" />;
 }
