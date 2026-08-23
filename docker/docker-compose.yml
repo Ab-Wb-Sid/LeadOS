@@ -23,14 +23,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql://leados_user:leados_password@postgres:5432/leados_db}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-60}
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@sanestix.com}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-ChangeMe123!}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    env_file:
+      - ../.env
     depends_on:
       postgres:
         condition: service_healthy
