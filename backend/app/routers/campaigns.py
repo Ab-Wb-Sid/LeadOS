@@ -68,6 +68,7 @@ def create_campaign(
     # committed and are the source of truth.
     trigger_run_campaign(
         campaign_id=campaign.id,
+        job_id=job.id,
         industry=campaign.industry,
         country=campaign.country,
         state=campaign.state,

@@ -21,6 +21,7 @@ logger = logging.getLogger("leados.n8n_trigger")
 
 def trigger_run_campaign(
     campaign_id: UUID,
+    job_id: UUID,
     industry: str,
     country: Optional[str],
     state: Optional[str],
@@ -42,9 +43,10 @@ def trigger_run_campaign(
           marking the Job as FAILED with an error_message instead.
     """
     logger.info(
-        "would trigger n8n here: run_campaign webhook | campaign_id=%s "
+        "would trigger n8n here: run_campaign webhook | campaign_id=%s job_id=%s "
         "industry=%r country=%r state=%r max_leads=%s",
         campaign_id,
+        job_id,
         industry,
         country,
         state,
