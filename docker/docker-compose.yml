@@ -5,7 +5,7 @@ services:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-leados_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-leados_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-placeholder_password}
       POSTGRES_DB: ${POSTGRES_DB:-leados_db}
     ports:
       - "5432:5432"
