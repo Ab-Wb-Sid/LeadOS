@@ -57,6 +57,10 @@ services:
       - NODE_ENV=${NODE_ENV:-production}
       - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-UTC}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - N8N_ENV_VARS_IN_EXPRESSIONS=INTERNAL_API_KEY
+      - N8N_ENFORCE_SETTINGS_FILE_FOR_CAN_ACCESS_ENV_VARS=false
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
     volumes:
       - n8n_data:/home/node/.n8n
       - ../n8n/workflows:/home/node/workflows

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -72,6 +72,30 @@ class CampaignStatusUpdateRequest(BaseModel):
 
 
 # --- Routes ---
+
+@router.get("/campaigns/{campaign_id}/companies/cleaned")
+def get_cleaned_companies(
+    campaign_id: UUID,
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    Returns a list of companies for a given campaign that are in CLEANED status.
+    Used by n8n to fetch companies that need enrichment.
+    """
+    companies = db.query(Company).filter(
+        Company.campaign_id == campaign_id,
+        Company.status == 'CLEANED'
+    ).all()
+    
+    return [
+        {
+            "id": str(c.id),
+            "name": c.name,
+            "website": c.website,
+            "normalized_domain": c.normalized_domain
+        }
+        for c in companies
+    ]
 
 @router.get("/apify-accounts/available")
 def claim_apify_account(db: Session = Depends(get_db)):
