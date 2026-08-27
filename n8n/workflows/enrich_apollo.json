@@ -15,7 +15,8 @@
       "position": [
         0,
         0
-      ]
+      ],
+      "webhookId": "22222222-2222-2222-2222-222222222222"
     },
     {
       "parameters": {
@@ -63,18 +64,6 @@
     },
     {
       "parameters": {
-        "jsCode": "const companies = $input.first().json;\nif (!Array.isArray(companies) || companies.length === 0) return [];\nreturn companies.map(c => ({ json: c }));"
-      },
-      "name": "Split Companies",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 1,
-      "position": [
-        600,
-        0
-      ]
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "=https://httpbin.org/post?token={{ $(\"Get Apollo Account\").first().json.api_key }}",
         "sendBody": true,
@@ -100,7 +89,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map((item, i) => {\n  const company = $(\"Split Companies\").all()[i].json;\n  return {\n    json: {\n      company_id: company.id,\n      first_name: \"Jane\",\n      last_name: \"Doe\",\n      email: \"jane@\" + company.website,\n      position: \"CEO\"\n    }\n  };\n});"
+        "jsCode": "return $input.all().map((item, i) => {\n  const company = $(\"Get Cleaned Companies\").all()[i].json;\n  return {\n    json: {\n      company_id: company.id,\n      first_name: \"Jane\",\n      last_name: \"Doe\",\n      email: \"jane@\" + company.website,\n      position: \"CEO\"\n    }\n  };\n});"
       },
       "name": "Mock Apollo Results",
       "type": "n8n-nodes-base.code",
@@ -185,7 +174,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://backend:8000/internal/campaigns/{{ $json.campaign_id }}/status",
+        "url": "=http://backend:8000/internal/campaigns/{{ $(\"Merge To Single Item\").first().json.campaign_id }}/status",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -237,17 +226,6 @@
       ]
     },
     "Get Cleaned Companies": {
-      "main": [
-        [
-          {
-            "node": "Split Companies",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Companies": {
       "main": [
         [
           {
