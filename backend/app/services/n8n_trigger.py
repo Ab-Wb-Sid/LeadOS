@@ -19,6 +19,30 @@ from uuid import UUID
 logger = logging.getLogger("leados.n8n_trigger")
 
 
+import threading
+import httpx
+import asyncio
+from app.core.config import settings
+
+def _fire_webhook(payload: dict):
+    async def do_request():
+        url = settings.N8N_RUN_CAMPAIGN_WEBHOOK_URL
+        if not url:
+            logger.warning("N8N_RUN_CAMPAIGN_WEBHOOK_URL is not set. Skipping n8n trigger.")
+            return
+            
+        async with httpx.AsyncClient() as client:
+            try:
+                logger.info(f"Firing n8n webhook: {url}")
+                await client.post(url, json=payload, timeout=10.0)
+            except Exception as e:
+                logger.error("Failed to trigger n8n: %s", e)
+    
+    try:
+        asyncio.run(do_request())
+    except Exception as e:
+        logger.error("Background task error: %s", e)
+
 def trigger_run_campaign(
     campaign_id: UUID,
     job_id: UUID,
@@ -28,27 +52,20 @@ def trigger_run_campaign(
     max_leads: int,
 ) -> None:
     """Kick off the 'Run Campaign' n8n workflow for a newly created campaign.
-
-    STUB: does not make any real HTTP call. Just logs the payload that
-    would be sent to the n8n webhook, so POST /campaigns can be developed
-    and tested end-to-end before any n8n workflows exist.
-
-    TODO (later Antigravity prompt, once n8n workflows exist):
-        - POST to settings.N8N_RUN_CAMPAIGN_WEBHOOK_URL (add to
-          core/config.py) with a JSON body of
-          {campaign_id, industry, country, state, max_leads}.
-        - Handle/log request failures without raising — a failed trigger
-          shouldn't crash the POST /campaigns response since the Campaign
-          and Job rows are already committed at that point. Consider
-          marking the Job as FAILED with an error_message instead.
+    
+    Fires the HTTP request in a background thread to prevent blocking the FastAPI 
+    response, adhering to the fire-and-forget architecture constraint.
     """
-    logger.info(
-        "would trigger n8n here: run_campaign webhook | campaign_id=%s job_id=%s "
-        "industry=%r country=%r state=%r max_leads=%s",
-        campaign_id,
-        job_id,
-        industry,
-        country,
-        state,
-        max_leads,
-    )
+    location_parts = [p for p in (state, country) if p]
+    location = ", ".join(location_parts) if location_parts else "Global"
+    
+    payload = {
+        "campaign_id": str(campaign_id),
+        "job_id": str(job_id),
+        "industry": industry,
+        "location": location,
+        "max_leads": max_leads
+    }
+    
+    thread = threading.Thread(target=_fire_webhook, args=(payload,), daemon=True)
+    thread.start()

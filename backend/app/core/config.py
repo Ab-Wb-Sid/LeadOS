@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     JWT_EXPIRE_MINUTES: int = 60
     INTERNAL_API_KEY: str
     ENCRYPTION_KEY: str
+    N8N_RUN_CAMPAIGN_WEBHOOK_URL: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
