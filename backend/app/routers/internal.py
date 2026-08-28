@@ -109,6 +109,7 @@ def claim_apify_account(db: Session = Depends(get_db)):
         WHERE id = (
             SELECT id FROM apify_accounts 
             WHERE status = 'ACTIVE' 
+            ORDER BY last_used_at ASC NULLS FIRST
             LIMIT 1 
             FOR UPDATE SKIP LOCKED
         ) 
@@ -144,6 +145,7 @@ def claim_apollo_account(db: Session = Depends(get_db)):
         WHERE id = (
             SELECT id FROM apollo_accounts 
             WHERE status = 'ACTIVE' 
+            ORDER BY last_used_at ASC NULLS FIRST
             LIMIT 1 
             FOR UPDATE SKIP LOCKED
         ) 
