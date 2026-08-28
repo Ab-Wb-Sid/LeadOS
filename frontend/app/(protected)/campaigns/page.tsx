@@ -17,26 +17,31 @@ export default function CampaignsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout>;
 
     async function load() {
-      setLoading(true);
-      setError(null);
       try {
         const result = await listCampaigns(page, PAGE_SIZE);
         if (cancelled) return;
         setCampaigns(result.items);
         setTotalPages(Math.max(result.total_pages, 1));
+        setError(null);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          timeout = setTimeout(load, 5000); // Poll every 5 seconds after request finishes
+        }
       }
     }
 
     load();
+
     return () => {
       cancelled = true;
+      clearTimeout(timeout);
     };
   }, [page]);
 

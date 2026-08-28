@@ -7,16 +7,13 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "run_campaign",
-        "responseMode": "lastNode",
+        "responseMode": "onReceived",
         "options": {}
       },
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [
-        0,
-        0
-      ],
+      "position": [0, 0],
       "webhookId": "33333333-3333-3333-3333-333333333333"
     },
     {
@@ -24,14 +21,7 @@
         "method": "POST",
         "url": "http://localhost:5678/webhook/scrape_apify",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
+        "headerParameters": { "parameters": [ { "name": "Content-Type", "value": "application/json" } ] },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.body) }}",
@@ -40,24 +30,56 @@
       "name": "Run Scrape",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [
-        200,
-        0
-      ]
+      "position": [200, 0],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [ { "value1": "={{ $json.error != undefined }}", "value2": true } ] }
+      },
+      "name": "Did Scrape Fail?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/internal/jobs/{{ $(\"Webhook\").first().json.body.job_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "Content-Type", "value": "application/json" } ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"FAILED\",\n  \"error_message\": \"Scrape Failed\"\n}",
+        "options": {}
+      },
+      "name": "Fail Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, -200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/internal/campaigns/{{ $(\"Webhook\").first().json.body.campaign_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "Content-Type", "value": "application/json" } ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"FAILED\"\n}",
+        "options": {}
+      },
+      "name": "Fail Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [800, -200]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "http://localhost:5678/webhook/enrich_apollo",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
+        "headerParameters": { "parameters": [ { "name": "Content-Type", "value": "application/json" } ] },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($(\"Webhook\").first().json.body) }}",
@@ -66,33 +88,33 @@
       "name": "Run Enrich",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 3,
-      "position": [
-        400,
-        0
-      ]
+      "position": [600, 200],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": { "boolean": [ { "value1": "={{ $json.error != undefined }}", "value2": true } ] }
+      },
+      "name": "Did Enrich Fail?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [800, 200]
     }
   ],
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Run Scrape",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Webhook": { "main": [ [ { "node": "Run Scrape", "type": "main", "index": 0 } ] ] },
+    "Run Scrape": { "main": [ [ { "node": "Did Scrape Fail?", "type": "main", "index": 0 } ] ] },
+    "Did Scrape Fail?": { 
+      "main": [ 
+        [ { "node": "Fail Job", "type": "main", "index": 0 } ],
+        [ { "node": "Run Enrich", "type": "main", "index": 0 } ]
+      ] 
     },
-    "Run Scrape": {
+    "Fail Job": { "main": [ [ { "node": "Fail Campaign", "type": "main", "index": 0 } ] ] },
+    "Run Enrich": { "main": [ [ { "node": "Did Enrich Fail?", "type": "main", "index": 0 } ] ] },
+    "Did Enrich Fail?": {
       "main": [
-        [
-          {
-            "node": "Run Enrich",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [ { "node": "Fail Job", "type": "main", "index": 0 } ]
       ]
     }
   },

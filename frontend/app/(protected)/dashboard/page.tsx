@@ -31,10 +31,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let timeout: ReturnType<typeof setTimeout>;
 
     async function load() {
-      setLoading(true);
-      setError(null);
       try {
         const [statsResult, campaignsResult] = await Promise.all([
           getDashboardStats(),
@@ -43,17 +42,23 @@ export default function DashboardPage() {
         if (cancelled) return;
         setStats(statsResult);
         setCampaigns(campaignsResult.items);
+        setError(null);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          timeout = setTimeout(load, 5000); // Poll every 5 seconds after request finishes
+        }
       }
     }
 
     load();
+
     return () => {
       cancelled = true;
+      clearTimeout(timeout);
     };
   }, []);
 

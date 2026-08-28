@@ -292,5 +292,7 @@
       ]
     }
   },
-  "settings": {}
+  "settings": {
+    "errorWorkflow": "error_handler_workflow_1"
+  }
 }

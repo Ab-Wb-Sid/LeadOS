@@ -1,0 +1,85 @@
+{
+  "id": "error_handler_workflow_1",
+  "name": "Global Error Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const execData = $json.execution.data;\nlet campaign_id = null;\nlet job_id = null;\ntry {\n  const webhookData = execData.startData.json.body || {};\n  campaign_id = webhookData.campaign_id;\n  job_id = webhookData.job_id;\n} catch(e) {}\nreturn { json: { campaign_id, job_id, error: $json.error.message } };"
+      },
+      "name": "Extract IDs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [200, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.campaign_id }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Has IDs?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [400, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/internal/jobs/{{ $json.job_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"FAILED\",\n  \"error_message\": \"{{ $json.error }}\"\n}",
+        "options": {}
+      },
+      "name": "POST Job Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://backend:8000/internal/campaigns/{{ $json.campaign_id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"status\": \"FAILED\"\n}",
+        "options": {}
+      },
+      "name": "POST Campaign Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [800, -100]
+    }
+  ],
+  "connections": {
+    "Error Trigger": { "main": [ [ { "node": "Extract IDs", "type": "main", "index": 0 } ] ] },
+    "Extract IDs": { "main": [ [ { "node": "Has IDs?", "type": "main", "index": 0 } ] ] },
+    "Has IDs?": { "main": [ [ { "node": "POST Job Failed", "type": "main", "index": 0 } ] ] },
+    "POST Job Failed": { "main": [ [ { "node": "POST Campaign Failed", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": {}
+}
