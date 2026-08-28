@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     INTERNAL_API_KEY: str
     ENCRYPTION_KEY: str
     N8N_RUN_CAMPAIGN_WEBHOOK_URL: str
+    USE_LIVE_HUBSPOT: bool = False
+    HUBSPOT_API_KEY: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
