@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.models.apify_account import ApifyAccount
 from app.models.user import User
 from app.models.audit_log import AuditLog
-from app.routers.auth import get_current_user
+from app.routers.auth import get_current_user, require_admin
 from app.schemas.apify_account import (
     ApifyAccountCreate,
     ApifyAccountRead,
@@ -18,7 +18,7 @@ from app.services.encryption import encrypt
 router = APIRouter(
     prefix="/apify-accounts",
     tags=["Apify Accounts"],
-    dependencies=[Depends(get_current_user)],
+    dependencies=[Depends(require_admin)],
 )
 
 @router.get("", response_model=list[ApifyAccountRead])
@@ -45,7 +45,7 @@ def create_apify_account(account_in: ApifyAccountCreate, db: Session = Depends(g
 def update_apify_account(
     id: UUID, 
     account_in: ApifyAccountUpdate, 
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """Update an Apify account. Re-encrypts the api_key if a new one is provided."""

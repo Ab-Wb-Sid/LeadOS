@@ -10,6 +10,7 @@ import {
   type Company 
 } from '@/lib/api';
 import { StatusBadge } from '@/components/StatusBadge';
+import { useAuth } from '@/lib/auth-context';
 
 const PAGE_SIZE = 20;
 
@@ -20,6 +21,7 @@ const INDUSTRIES = [
 ];
 
 export default function CompaniesPage() {
+  const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [companies, setCompanies] = useState<Company[] | null>(null);
   const [totalPages, setTotalPages] = useState(1);
@@ -154,6 +156,7 @@ export default function CompaniesPage() {
 
   const renderActions = (company: Company) => {
     if (['RAW', 'CLEANED', 'ENRICHED', 'READY'].includes(company.status)) {
+      if (user.role !== 'admin') return null;
       return (
         <button
           onClick={() => handleSingleSync(company.id)}
@@ -184,13 +187,15 @@ export default function CompaniesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl">Companies</h1>
-        <button 
-          className="btn-primary flex items-center gap-2 disabled:opacity-50"
-          onClick={handleBulkSync}
-          disabled={selectedIds.size === 0 || syncing}
-        >
-          {syncing ? 'Syncing...' : `Sync Selected (${selectedIds.size})`}
-        </button>
+        {user.role === 'admin' && (
+          <button 
+            className="btn-primary flex items-center gap-2 disabled:opacity-50"
+            onClick={handleBulkSync}
+            disabled={selectedIds.size === 0 || syncing}
+          >
+            {syncing ? 'Syncing...' : `Sync Selected (${selectedIds.size})`}
+          </button>
+        )}
       </div>
       
       {/* Filter Bar */}

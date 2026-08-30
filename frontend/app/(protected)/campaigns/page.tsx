@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth-context';
 import { ApiError, listCampaigns, type Campaign } from '@/lib/api';
 import { formatDate, formatNumber } from '@/lib/format';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -9,6 +10,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 const PAGE_SIZE = 20;
 
 export default function CampaignsPage() {
+  const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [totalPages, setTotalPages] = useState(1);
@@ -49,9 +51,11 @@ export default function CampaignsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl">Campaigns</h1>
-        <Link href="/campaigns/new" className="btn-primary">
-          + New Campaign
-        </Link>
+        {user.role === 'admin' && (
+          <Link href="/campaigns/new" className="btn-primary">
+            + New Campaign
+          </Link>
+        )}
       </div>
 
       {error && (
@@ -129,10 +133,14 @@ export default function CampaignsPage() {
         ) : (
           <p className="px-5 py-6 text-sm text-neutral-500">
             No campaigns yet.{' '}
-            <Link href="/campaigns/new" className="font-medium text-primary-600 hover:text-primary-700">
-              Start your first one
-            </Link>
-            .
+            {user.role === 'admin' && (
+              <>
+                <Link href="/campaigns/new" className="font-medium text-primary-600 hover:text-primary-700">
+                  Start your first one
+                </Link>
+                .
+              </>
+            )}
           </p>
         )}
       </div>

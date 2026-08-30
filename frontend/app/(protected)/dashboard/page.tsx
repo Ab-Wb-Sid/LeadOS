@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth-context';
 import {
   ApiError,
   getDashboardStats,
@@ -24,6 +25,7 @@ interface StatCard {
 // AppShell (nav bar + sidebar + page padding) is applied by
 // app/(protected)/layout.tsx, so this only needs to render its own content.
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,9 +78,11 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-xl">Dashboard</h1>
-        <Link href="/campaigns/new" className="btn-primary">
-          + New Campaign
-        </Link>
+        {user.role === 'admin' && (
+          <Link href="/campaigns/new" className="btn-primary">
+            + New Campaign
+          </Link>
+        )}
       </div>
 
       {error && (
@@ -150,10 +154,14 @@ export default function DashboardPage() {
             ) : (
               <p className="px-5 py-6 text-sm text-neutral-500">
                 No campaigns yet.{' '}
-                <Link href="/campaigns/new" className="font-medium text-primary-600 hover:text-primary-700">
-                  Start your first one
-                </Link>
-                .
+                {user.role === 'admin' && (
+                  <>
+                    <Link href="/campaigns/new" className="font-medium text-primary-600 hover:text-primary-700">
+                      Start your first one
+                    </Link>
+                    .
+                  </>
+                )}
               </p>
             )}
           </div>

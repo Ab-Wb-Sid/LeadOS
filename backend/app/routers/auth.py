@@ -68,6 +68,11 @@ def logout(response: Response):
     return {"message": "Logged out"}
 
 
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return current_user
+
 @router.get("/me", response_model=UserRead)
 def me(current_user: User = Depends(get_current_user)):
     return current_user

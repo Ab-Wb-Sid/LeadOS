@@ -10,7 +10,7 @@ from app.models.campaign import Campaign
 from app.models.company import Company
 from app.models.job import Job
 from app.models.user import User
-from app.routers.auth import get_current_user
+from app.routers.auth import get_current_user, require_admin
 from app.schemas.campaign import CampaignCreate, CampaignListResponse, CampaignRead, CampaignDetailRead
 from app.schemas.company import CompanyListResponse
 from app.services.n8n_trigger import trigger_run_campaign
@@ -28,7 +28,7 @@ def _get_campaign_or_404(campaign_id: UUID, db: Session) -> Campaign:
 @router.post("", response_model=CampaignRead, status_code=status.HTTP_201_CREATED)
 def create_campaign(
     payload: CampaignCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Create a campaign and kick off the scrape.

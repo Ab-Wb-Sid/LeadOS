@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 
 interface NavLink {
   label: string;
@@ -52,11 +53,19 @@ function linkClasses(active: boolean): string {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const filteredNavItems = NAV_ITEMS.filter((item) => {
+    if ((item.label === 'Accounts' || item.label === 'HubSpot') && user.role !== 'admin') {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <nav className="w-56 shrink-0 border-r border-neutral-200 bg-white px-3 py-6">
       <ul className="space-y-1">
-        {NAV_ITEMS.map((item) =>
+        {filteredNavItems.map((item) =>
           isGroup(item) ? (
             <li key={item.label}>
               <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">

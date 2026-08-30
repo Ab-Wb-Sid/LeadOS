@@ -8,7 +8,7 @@ from app.models.company import Company
 from app.models.contact import Contact
 from app.models.hubspot_sync_log import HubspotSyncLog
 from app.models.user import User
-from app.routers.auth import get_current_user
+from app.routers.auth import get_current_user, require_admin
 from app.schemas.hubspot import BulkSyncRequest, BulkSyncResponse, HubspotSyncLogOut, SyncResultSummary
 from app.schemas.pagination import Page
 from app.services.hubspot_client import (
@@ -18,7 +18,7 @@ from app.services.hubspot_client import (
     find_contact_by_email,
 )
 
-router = APIRouter(prefix="/hubspot", tags=["HubSpot"])
+router = APIRouter(prefix="/hubspot", tags=["HubSpot"], dependencies=[Depends(require_admin)])
 
 
 async def _sync_single_company(db: Session, company_id: UUID4) -> SyncResultSummary:
@@ -102,7 +102,7 @@ async def _sync_single_company(db: Session, company_id: UUID4) -> SyncResultSumm
 @router.post("/sync/{company_id}", response_model=SyncResultSummary)
 async def sync_company(
     company_id: UUID4, 
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """
@@ -118,7 +118,7 @@ async def sync_company(
 @router.post("/sync-bulk", response_model=BulkSyncResponse)
 async def sync_bulk(
     request: BulkSyncRequest, 
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
     """
@@ -133,7 +133,7 @@ async def sync_bulk(
 
 @router.get("/logs", response_model=Page[HubspotSyncLogOut])
 def get_logs(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
