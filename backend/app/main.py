@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import apify_accounts, apollo_accounts, auth, campaigns, dashboard, internal
+from app.routers import apify_accounts, apollo_accounts, auth, campaigns, dashboard, internal, hubspot
 
 app = FastAPI(title="LeadOS API")
 
@@ -23,6 +23,7 @@ app.include_router(dashboard.router)
 app.include_router(apify_accounts.router)
 app.include_router(apollo_accounts.router)
 app.include_router(internal.router)
+app.include_router(hubspot.router)
 
 
 @app.get("/health")
