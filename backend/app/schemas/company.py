@@ -38,3 +38,6 @@ class CompanyRead(BaseModel):
 class CompanyListResponse(Page[CompanyRead]):
     """Paginated response for GET /campaigns/{id}/companies (and later
     GET /companies once that router exists)."""
+
+class CompanyUpdate(BaseModel):
+    status: str
