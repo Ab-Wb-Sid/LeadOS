@@ -208,3 +208,67 @@ export function createAccount(provider: 'apify' | 'apollo', payload: AccountCrea
     body: JSON.stringify(payload),
   });
 }
+
+// -- Companies --
+
+export interface Company {
+  id: string;
+  name: string;
+  website: string | null;
+  normalized_domain: string | null;
+  industry: string | null;
+  status: string;
+  hubspot_company_id: string | null;
+  created_at: string;
+}
+
+export type CompanyListResponse = Page<Company>;
+
+export function listCompanies(page = 1, pageSize = 20): Promise<CompanyListResponse> {
+  return request<CompanyListResponse>(`/companies?page=${page}&page_size=${pageSize}`, {
+    method: 'GET',
+  });
+}
+
+// -- HubSpot --
+
+export interface SyncResultSummary {
+  company_id: string;
+  status: string;
+  error?: string | null;
+}
+
+export interface BulkSyncResponse {
+  results: SyncResultSummary[];
+}
+
+export interface HubspotSyncLogOut {
+  id: string;
+  company_id: string | null;
+  contact_id: string | null;
+  company_name: string | null;
+  sync_status: string | null;
+  error_message: string | null;
+  synced_at: string;
+}
+
+export type HubspotLogsResponse = Page<HubspotSyncLogOut>;
+
+export function syncCompanyToHubspot(companyId: string): Promise<SyncResultSummary> {
+  return request<SyncResultSummary>(`/hubspot/sync/${companyId}`, {
+    method: 'POST',
+  });
+}
+
+export function bulkSyncToHubspot(companyIds: string[]): Promise<BulkSyncResponse> {
+  return request<BulkSyncResponse>('/hubspot/sync-bulk', {
+    method: 'POST',
+    body: JSON.stringify({ company_ids: companyIds }),
+  });
+}
+
+export function getHubspotLogs(page = 1, pageSize = 20): Promise<HubspotLogsResponse> {
+  return request<HubspotLogsResponse>(`/hubspot/logs?page=${page}&page_size=${pageSize}`, {
+    method: 'GET',
+  });
+}
