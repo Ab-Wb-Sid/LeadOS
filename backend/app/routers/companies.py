@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.company import Company
 from app.models.user import User
+from app.models.audit_log import AuditLog
 from app.routers.auth import get_current_user
 from app.schemas.company import CompanyListResponse, CompanyRead, CompanyUpdate
 
@@ -93,7 +94,18 @@ def update_company(
             detail=f"Invalid status {new_status}. Allowed manual statuses are: {', '.join(allowed_statuses)}"
         )
 
+    old_status = company.status
     company.status = new_status
+    if old_status != new_status:
+        db.add(AuditLog(
+            entity_type="company",
+            entity_id=str(company.id),
+            field="status",
+            old_value=old_status,
+            new_value=new_status,
+            changed_by=current_user.email
+        ))
+        
     db.commit()
     db.refresh(company)
 

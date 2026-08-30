@@ -13,6 +13,7 @@ from app.models.campaign import Campaign
 from app.models.company import Company
 from app.models.contact import Contact
 from app.models.job import Job
+from app.models.audit_log import AuditLog
 from app.services.dedup import normalize_domain
 from app.services.scoring import score_company
 from app.services.encryption import decrypt
@@ -213,6 +214,16 @@ def bulk_insert_companies(
     result = db.execute(stmt)
     inserted_ids = result.scalars().all()
     
+    for cid in inserted_ids:
+        db.add(AuditLog(
+            entity_type="company",
+            entity_id=str(cid),
+            field="status",
+            old_value=None,
+            new_value="CLEANED",
+            changed_by="system:n8n"
+        ))
+    
     inserted_count = len(inserted_ids)
     found_count = len(payload.companies) - inserted_count
     
@@ -263,7 +274,17 @@ def bulk_insert_contacts(
     # 2. Update company status and score
     company = db.query(Company).filter(Company.id == payload.company_id).first()
     if company:
+        old_status = company.status
         company.status = "ENRICHED"
+        if old_status != "ENRICHED":
+            db.add(AuditLog(
+                entity_type="company",
+                entity_id=str(company.id),
+                field="status",
+                old_value=old_status,
+                new_value="ENRICHED",
+                changed_by="system:n8n"
+            ))
         
         # Attach contacts dynamically for the pure scoring function
         company.contacts = list(existing_by_email.values())
@@ -294,7 +315,17 @@ def update_job_status(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
         
+    old_status = job.status
     job.status = payload.status
+    if old_status != payload.status:
+        db.add(AuditLog(
+            entity_type="job",
+            entity_id=str(job.id),
+            field="status",
+            old_value=old_status,
+            new_value=payload.status,
+            changed_by="system:n8n"
+        ))
     if payload.error_message:
         job.error_message = payload.error_message
         
@@ -320,7 +351,17 @@ def update_campaign_status(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
         
+    old_status = campaign.status
     campaign.status = payload.status
+    if old_status != payload.status:
+        db.add(AuditLog(
+            entity_type="campaign",
+            entity_id=str(campaign.id),
+            field="status",
+            old_value=old_status,
+            new_value=payload.status,
+            changed_by="system:n8n"
+        ))
     
     if payload.status == "COMPLETED":
         campaign.completed_at = func.now()

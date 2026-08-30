@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.apify_account import ApifyAccount
+from app.models.user import User
+from app.models.audit_log import AuditLog
 from app.routers.auth import get_current_user
 from app.schemas.apify_account import (
     ApifyAccountCreate,
@@ -41,7 +43,10 @@ def create_apify_account(account_in: ApifyAccountCreate, db: Session = Depends(g
 
 @router.patch("/{id}", response_model=ApifyAccountRead)
 def update_apify_account(
-    id: UUID, account_in: ApifyAccountUpdate, db: Session = Depends(get_db)
+    id: UUID, 
+    account_in: ApifyAccountUpdate, 
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """Update an Apify account. Re-encrypts the api_key if a new one is provided."""
     db_obj = db.query(ApifyAccount).filter(ApifyAccount.id == id).first()
@@ -55,7 +60,18 @@ def update_apify_account(
         update_data["api_key"] = encrypt(update_data["api_key"])
 
     for field, value in update_data.items():
-        setattr(db_obj, field, value)
+        old_value = getattr(db_obj, field)
+        if str(old_value) != str(value):
+            setattr(db_obj, field, value)
+            if field in ("remaining_credits", "status"):
+                db.add(AuditLog(
+                    entity_type="apify_account",
+                    entity_id=str(db_obj.id),
+                    field=field,
+                    old_value=str(old_value) if old_value is not None else None,
+                    new_value=str(value) if value is not None else None,
+                    changed_by=current_user.email
+                ))
 
     db.add(db_obj)
     db.commit()
