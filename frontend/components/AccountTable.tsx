@@ -105,13 +105,10 @@ export function AccountTable({ provider, title }: AccountTableProps) {
                   <td className="px-6 py-4">{acc.remaining_credits}</td>
                   <td className="px-6 py-4">
                     <span className={STATUS_BADGE_CLASS[acc.status] || 'badge-neutral'}>
-                      {acc.status}
+                      {acc.status === 'COOLDOWN' && acc.reset_date 
+                        ? `COOLDOWN (reset ${new Date(acc.reset_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })})`
+                        : acc.status}
                     </span>
-                    {acc.status === 'COOLDOWN' && acc.reset_date && (
-                      <span className="ml-2 text-xs text-neutral-400">
-                        (Resets: {acc.reset_date})
-                      </span>
-                    )}
                   </td>
                 </tr>
               ))

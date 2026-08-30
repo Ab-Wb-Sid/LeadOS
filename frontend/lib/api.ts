@@ -37,6 +37,7 @@ export interface Campaign {
   created_by: string | null;
   created_at: string;
   completed_at: string | null;
+  error_message?: string | null;
   status_breakdown?: Record<string, number>;
 }
 

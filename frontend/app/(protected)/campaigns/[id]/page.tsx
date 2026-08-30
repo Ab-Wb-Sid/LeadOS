@@ -112,6 +112,13 @@ export default function CampaignDetailPage() {
             <StatusBadge status={campaign.status} />
           </div>
 
+          {campaign.status === 'FAILED' && campaign.error_message && (
+            <div className="rounded-lg bg-danger-50 p-4 border border-danger-200">
+              <h3 className="text-sm font-medium text-danger-800">Campaign Failed</h3>
+              <p className="mt-1 text-sm text-danger-700">{campaign.error_message}</p>
+            </div>
+          )}
+
           {/* Header Stats */}
           <div className="grid gap-4 md:grid-cols-4">
             <div className="card px-5 py-4">

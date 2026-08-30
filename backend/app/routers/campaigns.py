@@ -96,6 +96,12 @@ def list_campaigns(
         .limit(page_size)
         .all()
     )
+    for item in items:
+        if item.status == "FAILED":
+            job = db.query(Job).filter(Job.campaign_id == item.id, Job.status == "FAILED").first()
+            setattr(item, 'error_message', job.error_message if job else None)
+        else:
+            setattr(item, 'error_message', None)
     return CampaignListResponse(items=items, total=total, page=page, page_size=page_size)
 
 
@@ -119,6 +125,12 @@ def get_campaign(
     # Pydantic v2 from_attributes will extract properties from the SQLAlchemy model.
     # But since status_breakdown is not a column on the model, we can return a dict
     # or attach it to the campaign object. Returning a dictionary is safest.
+    error_message = None
+    if campaign.status == "FAILED":
+        job = db.query(Job).filter(Job.campaign_id == campaign_id, Job.status == "FAILED").first()
+        if job:
+            error_message = job.error_message
+
     return {
         "id": campaign.id,
         "name": campaign.name,
@@ -133,6 +145,7 @@ def get_campaign(
         "created_by": campaign.created_by,
         "created_at": campaign.created_at,
         "completed_at": campaign.completed_at,
+        "error_message": error_message,
         "status_breakdown": status_breakdown
     }
 

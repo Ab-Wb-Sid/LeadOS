@@ -37,6 +37,7 @@ class CampaignRead(BaseModel):
     created_by: Optional[UUID] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
 
 
 class CampaignListResponse(Page[CampaignRead]):

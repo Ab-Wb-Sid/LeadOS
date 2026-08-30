@@ -89,6 +89,11 @@ export default function CampaignsPage() {
                       >
                         {campaign.name}
                       </Link>
+                      {campaign.status === 'FAILED' && campaign.error_message && (
+                        <div className="mt-1 inline-flex items-center rounded-md bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 ring-1 ring-inset ring-danger-600/20" title={campaign.error_message}>
+                          <span className="truncate max-w-xs">Failed: {campaign.error_message}</span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-neutral-600">{campaign.industry}</td>
                     <td className="px-5 py-3">
