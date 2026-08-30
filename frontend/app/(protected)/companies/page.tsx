@@ -1,16 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { 
   ApiError, 
   listCompanies, 
   syncCompanyToHubspot, 
-  bulkSyncToHubspot, 
+  bulkSyncToHubspot,
+  updateCompanyStatus,
   type Company 
 } from '@/lib/api';
 import { StatusBadge } from '@/components/StatusBadge';
 
 const PAGE_SIZE = 20;
+
+// Industries for the dropdown (in a real app this might come from an API)
+const INDUSTRIES = [
+  'Software', 'Hardware', 'Manufacturing', 'Roofing', 'Garage Door Repair',
+  'Plumbing', 'HVAC', 'Construction', 'Consulting', 'Retail', 'Other'
+];
 
 export default function CompaniesPage() {
   const [page, setPage] = useState(1);
@@ -21,41 +28,64 @@ export default function CompaniesPage() {
   
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState(false);
-  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [actionId, setActionId] = useState<string | null>(null);
 
+  // Filters
+  const [statusFilter, setStatusFilter] = useState('');
+  const [industryFilter, setIndustryFilter] = useState('');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search
   useEffect(() => {
-    let cancelled = false;
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchFilter);
+      setPage(1); // Reset page on search change
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchFilter]);
 
-    async function load() {
-      setLoading(true);
-      try {
-        const result = await listCompanies(page, PAGE_SIZE);
-        if (cancelled) return;
-        setCompanies(result.items);
-        setTotalPages(Math.max(result.total_pages, 1));
-        setError(null);
-      } catch (err) {
-        if (cancelled) return;
-        // Handle gracefully if GET /companies isn't fully implemented in backend yet
-        if (err instanceof ApiError && err.status === 404) {
-             setError("The GET /companies endpoint is not implemented yet on the backend.");
-        } else {
-             setError(err instanceof ApiError ? err.message : 'Something went wrong while fetching companies.');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, industryFilter]);
+
+  const loadCompanies = useCallback(async (cancelled: { value: boolean }) => {
+    setLoading(true);
+    try {
+      const result = await listCompanies(
+        page, 
+        PAGE_SIZE, 
+        statusFilter || undefined, 
+        industryFilter || undefined, 
+        debouncedSearch || undefined
+      );
+      if (cancelled.value) return;
+      setCompanies(result.items);
+      setTotalPages(Math.max(result.total_pages, 1));
+      setError(null);
+    } catch (err) {
+      if (cancelled.value) return;
+      if (err instanceof ApiError && err.status === 404) {
+           setError("The GET /companies endpoint is not implemented yet on the backend.");
+      } else {
+           setError(err instanceof ApiError ? err.message : 'Something went wrong while fetching companies.');
+      }
+    } finally {
+      if (!cancelled.value) {
+        setLoading(false);
       }
     }
+  }, [page, statusFilter, industryFilter, debouncedSearch]);
 
-    load();
+  useEffect(() => {
+    const cancelled = { value: false };
+    loadCompanies(cancelled);
     setSelectedIds(new Set());
-
     return () => {
-      cancelled = true;
+      cancelled.value = true;
     };
-  }, [page]);
+  }, [loadCompanies]);
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!companies) return;
@@ -75,7 +105,7 @@ export default function CompaniesPage() {
 
   const handleSingleSync = async (companyId: string) => {
     try {
-      setSyncingId(companyId);
+      setActionId(companyId);
       setError(null);
       await syncCompanyToHubspot(companyId);
       setCompanies(prev => prev?.map(c => 
@@ -85,7 +115,7 @@ export default function CompaniesPage() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to sync company.');
     } finally {
-      setSyncingId(null);
+      setActionId(null);
     }
   };
 
@@ -107,6 +137,49 @@ export default function CompaniesPage() {
     }
   };
 
+  const handleStatusUpdate = async (companyId: string, newStatus: string) => {
+    try {
+      setActionId(companyId);
+      setError(null);
+      const updatedCompany = await updateCompanyStatus(companyId, newStatus);
+      setCompanies(prev => prev?.map(c => 
+        c.id === companyId ? { ...c, status: updatedCompany.status } : c
+      ) ?? null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update company status.');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const renderActions = (company: Company) => {
+    if (['RAW', 'CLEANED', 'ENRICHED', 'READY'].includes(company.status)) {
+      return (
+        <button
+          onClick={() => handleSingleSync(company.id)}
+          disabled={actionId === company.id}
+          className="text-primary-600 font-medium hover:text-primary-700 disabled:opacity-50 text-xs uppercase tracking-wide"
+        >
+          {actionId === company.id ? 'Processing...' : 'Sync to HubSpot'}
+        </button>
+      );
+    } else {
+      return (
+        <select
+          value={company.status}
+          onChange={(e) => handleStatusUpdate(company.id, e.target.value)}
+          disabled={actionId === company.id}
+          className="text-xs uppercase tracking-wide rounded border-neutral-300 py-1 pl-2 pr-6 focus:border-primary-500 focus:ring-primary-500 disabled:opacity-50"
+        >
+          <option value="HUBSPOT">HubSpot</option>
+          <option value="CONTACTED">Contacted</option>
+          <option value="QUALIFIED">Qualified</option>
+          <option value="CUSTOMER">Customer</option>
+        </select>
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -118,6 +191,54 @@ export default function CompaniesPage() {
         >
           {syncing ? 'Syncing...' : `Sync Selected (${selectedIds.size})`}
         </button>
+      </div>
+      
+      {/* Filter Bar */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <div>
+          <label className="sr-only" htmlFor="search">Search</label>
+          <input
+            id="search"
+            type="text"
+            placeholder="Search by name, website, city..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="w-full rounded-lg border-neutral-300 text-sm focus:border-primary-500 focus:ring-primary-500"
+          />
+        </div>
+        <div>
+          <label className="sr-only" htmlFor="status">Status</label>
+          <select
+            id="status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full rounded-lg border-neutral-300 text-sm focus:border-primary-500 focus:ring-primary-500"
+          >
+            <option value="">All Statuses</option>
+            <option value="RAW">Raw</option>
+            <option value="CLEANED">Cleaned</option>
+            <option value="ENRICHED">Enriched</option>
+            <option value="READY">Ready</option>
+            <option value="HUBSPOT">HubSpot</option>
+            <option value="CONTACTED">Contacted</option>
+            <option value="QUALIFIED">Qualified</option>
+            <option value="CUSTOMER">Customer</option>
+          </select>
+        </div>
+        <div>
+          <label className="sr-only" htmlFor="industry">Industry</label>
+          <select
+            id="industry"
+            value={industryFilter}
+            onChange={(e) => setIndustryFilter(e.target.value)}
+            className="w-full rounded-lg border-neutral-300 text-sm focus:border-primary-500 focus:ring-primary-500"
+          >
+            <option value="">All Industries</option>
+            {INDUSTRIES.map(ind => (
+              <option key={ind} value={ind}>{ind}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {error && (
@@ -168,13 +289,7 @@ export default function CompaniesPage() {
                         <StatusBadge status={company.status} />
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <button
-                          onClick={() => handleSingleSync(company.id)}
-                          disabled={syncingId === company.id}
-                          className="text-primary-600 font-medium hover:text-primary-700 disabled:opacity-50 text-xs uppercase tracking-wide"
-                        >
-                          {syncingId === company.id ? 'Syncing...' : 'Sync to HubSpot'}
-                        </button>
+                        {renderActions(company)}
                       </td>
                     </tr>
                   ))}
@@ -208,7 +323,7 @@ export default function CompaniesPage() {
           </>
         ) : (
           <p className="px-5 py-6 text-sm text-neutral-500">
-            No companies found. 
+            No companies found matching filters.
           </p>
         )}
       </div>

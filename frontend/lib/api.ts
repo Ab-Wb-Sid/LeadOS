@@ -37,6 +37,7 @@ export interface Campaign {
   created_by: string | null;
   created_at: string;
   completed_at: string | null;
+  status_breakdown?: Record<string, number>;
 }
 
 // Mirrors backend/app/schemas/campaign.py CampaignCreate
@@ -173,6 +174,13 @@ export function getCampaign(id: string): Promise<Campaign> {
   });
 }
 
+/** GET /campaigns/{id}/companies */
+export function listCampaignCompanies(id: string, page = 1, pageSize = 20): Promise<CompanyListResponse> {
+  return request<CompanyListResponse>(`/campaigns/${id}/companies?page=${page}&page_size=${pageSize}`, {
+    method: 'GET',
+  });
+}
+
 /** POST /campaigns — creates the Campaign + its initial SCRAPE job, stub-triggers n8n. */
 export function createCampaign(payload: CampaignCreateInput): Promise<Campaign> {
   return request<Campaign>('/campaigns', {
@@ -224,9 +232,30 @@ export interface Company {
 
 export type CompanyListResponse = Page<Company>;
 
-export function listCompanies(page = 1, pageSize = 20): Promise<CompanyListResponse> {
-  return request<CompanyListResponse>(`/companies?page=${page}&page_size=${pageSize}`, {
+export function listCompanies(
+  page = 1, 
+  pageSize = 20, 
+  status?: string, 
+  industry?: string, 
+  search?: string
+): Promise<CompanyListResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString()
+  });
+  if (status) params.append('status', status);
+  if (industry) params.append('industry', industry);
+  if (search) params.append('search', search);
+
+  return request<CompanyListResponse>(`/companies?${params.toString()}`, {
     method: 'GET',
+  });
+}
+
+export function updateCompanyStatus(id: string, status: string): Promise<Company> {
+  return request<Company>(`/companies/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status })
   });
 }
 
