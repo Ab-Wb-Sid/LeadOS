@@ -41,3 +41,7 @@ class CampaignRead(BaseModel):
 
 class CampaignListResponse(Page[CampaignRead]):
     """Paginated response for GET /campaigns."""
+
+class CampaignDetailRead(CampaignRead):
+    """Detailed read shape for a single campaign, including status breakdown."""
+    status_breakdown: dict[str, int]

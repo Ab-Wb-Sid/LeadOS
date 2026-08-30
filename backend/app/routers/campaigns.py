@@ -3,13 +3,15 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from sqlalchemy import func
+
 from app.db.session import get_db
 from app.models.campaign import Campaign
 from app.models.company import Company
 from app.models.job import Job
 from app.models.user import User
 from app.routers.auth import get_current_user
-from app.schemas.campaign import CampaignCreate, CampaignListResponse, CampaignRead
+from app.schemas.campaign import CampaignCreate, CampaignListResponse, CampaignRead, CampaignDetailRead
 from app.schemas.company import CompanyListResponse
 from app.services.n8n_trigger import trigger_run_campaign
 
@@ -97,13 +99,42 @@ def list_campaigns(
     return CampaignListResponse(items=items, total=total, page=page, page_size=page_size)
 
 
-@router.get("/{campaign_id}", response_model=CampaignRead)
+@router.get("/{campaign_id}", response_model=CampaignDetailRead)
 def get_campaign(
     campaign_id: UUID,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return _get_campaign_or_404(campaign_id, db)
+    campaign = _get_campaign_or_404(campaign_id, db)
+    
+    status_counts = (
+        db.query(Company.status, func.count(Company.id))
+        .filter(Company.campaign_id == campaign_id)
+        .group_by(Company.status)
+        .all()
+    )
+    
+    status_breakdown = {status: count for status, count in status_counts}
+    
+    # Pydantic v2 from_attributes will extract properties from the SQLAlchemy model.
+    # But since status_breakdown is not a column on the model, we can return a dict
+    # or attach it to the campaign object. Returning a dictionary is safest.
+    return {
+        "id": campaign.id,
+        "name": campaign.name,
+        "industry": campaign.industry,
+        "country": campaign.country,
+        "state": campaign.state,
+        "max_leads": campaign.max_leads,
+        "status": campaign.status,
+        "total_scraped": campaign.total_scraped,
+        "total_enriched": campaign.total_enriched,
+        "total_imported": campaign.total_imported,
+        "created_by": campaign.created_by,
+        "created_at": campaign.created_at,
+        "completed_at": campaign.completed_at,
+        "status_breakdown": status_breakdown
+    }
 
 
 @router.get("/{campaign_id}/companies", response_model=CompanyListResponse)
